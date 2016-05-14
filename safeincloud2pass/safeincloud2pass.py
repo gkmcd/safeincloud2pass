@@ -7,6 +7,7 @@ Usage:
 # IMPORTS
 import argparse
 import texttable
+import subprocess
 import xml.etree.ElementTree
 
 
@@ -17,6 +18,15 @@ class Card(object):
     pass
 
 
+# FUNCTIONS
+def pass_import_entry(path, data):
+    """Import new password to password-store using pass insert command."""
+    proc = subprocess.Popen(['pass', 'insert', '--multiline', path],
+                            stdin=PIPE, stdout=PIPE)
+    proc.communicate(data.encode('utf8'))
+    proc.wait()
+
+
 def main(args):
     """Main function for safeincloud2pass."""
     # arguments
@@ -24,8 +34,10 @@ def main(args):
     parser = argparse.ArgumentParser(description=argparse_desc)
     parser.add_argument('xmlfile', type=str,
                         help='Path to SafeInCloud .xml export file.')
+    parser.add_argument('--skip_samples', type=bool, default=True,
+                        help='Skip samples')
     # TODO: include deleted bool
-    # TODO: ignore samples bool
+
     args = parser.parse_args()
 
     tree = xml.etree.ElementTree.parse(args.xmlfile)
@@ -35,7 +47,10 @@ def main(args):
         # get data
         title = card.attrib['title']
 
-        # init table
+        if args.skip_samples and '(Sample)' in title:
+            continue
+
+        # init display table
         table = texttable.Texttable()
         table.set_cols_align(['c', 'c', 'c'])
         table.set_cols_valign(['m', 'm', 'm'])
@@ -50,15 +65,22 @@ def main(args):
         print(title)
         print(table.draw() + "\n")
 
-        # input
-        choice = input('Choose to (i)nsert card, (s)kip card or (q)uit: ')
+        # handle input
+        while True:
+            choice = input('Choose to: (i)nsert card, (s)kip card or (q)uit: ')
+            if choice.lower() not in ('i', 's', 'q'):
+                print("Not an appropriate choice.")
+            else:
+                break
 
+        # process selection
         if choice.lower() == 'i':
             # insert
-            pass
+            print('pass insert ')
         elif choice.lower() == 's':
             # skip card
-            pass
+            print('Skipping card...')
+            print('\n\n')
         elif choice.lower() == 'q':
             return
 
