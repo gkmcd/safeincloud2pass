@@ -18,6 +18,8 @@ class Card(object):
 
     def __init__(self, xml_data, fields):
         """."""
+        self.load_from_from_xml(xml_data)
+        self.fields = fields
 
     def load_from_from_xml(self, xml_data):
         """Populate from xml.etree data."""
@@ -25,8 +27,8 @@ class Card(object):
         self.symbol = xml_data.attrib.get('symbol')
         self.is_template = xml_data.attrib.get('template', False)
         self.is_deleted = xml_data.attrib.get('deleted', False)
-        self.symbol = xml_data.attrib.get('label')
-        self.symbol = xml_data.attrib.get('notes')
+        self.label = xml_data.attrib.get('label')
+        self.notes = xml_data.attrib.get('notes')
 
     @property
     def is_sample(self):
