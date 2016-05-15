@@ -10,21 +10,79 @@ import texttable
 import subprocess
 import xml.etree.ElementTree
 
+# namedtuple('Card', '''title fields symbol template deleted sample label notes''') # noqa
 
-# OBJECTS
+
 class Card(object):
-    """Represents a SafeInCloud record."""
+    """Represents a SafeInCloud "card"."""
 
-    pass
+    def __init__(self, xml_data, fields):
+        """."""
+
+    def load_from_from_xml(self, xml_data):
+        """Populate from xml.etree data."""
+        self.title = xml_data.attrib.get('title')
+        self.symbol = xml_data.attrib.get('symbol')
+        self.is_template = xml_data.attrib.get('template', False)
+        self.is_deleted = xml_data.attrib.get('deleted', False)
+        self.symbol = xml_data.attrib.get('label')
+        self.symbol = xml_data.attrib.get('notes')
+
+    @property
+    def is_sample(self):
+        """SafeInCloud default sample cards have (Sample) in their title."""
+        return self.title.find('(Sample)')
+
+    def output_for_pass():
+        """."""
+        pass
+
+
+class Field(object):
+    """."""
+
+    def __init__(self, xml_data):
+        """."""
+        self.load_from_xml_data(xml_data)
+
+    def load_from_xml_data(self, xml_data):
+        """Populate from xml.etree data."""
+        self.name = xml_data.attrib.get('name')
+        self.type_ = xml_data.attrib.get('type')
+        self.value = xml_data.text
+
+    def output_for_pass():
+        """."""
+        pass
+
+
+class Label(object):
+    """."""
+
+    def __init__():
+        """."""
+        pass
 
 
 # FUNCTIONS
 def pass_import_entry(path, data):
     """Import new password to password-store using pass insert command."""
     proc = subprocess.Popen(['pass', 'insert', '--multiline', path],
-                            stdin=PIPE, stdout=PIPE)
+                            stdin=PIPE, stdout=PIPE)  # noqa
     proc.communicate(data.encode('utf8'))
     proc.wait()
+
+
+def get_cards(xmlroot):
+    """Return a list of Card objects from card xml elements under xmlroot."""
+    card_tags = [card for card in xmlroot.iter('card')]
+    all_cards = []
+    for tag in card_tags:
+        fields = [Field(tag) for field in tag.iter('field')]
+        card = Card(tag, fields)
+        all_cards.append(card)
+
+    return all_cards
 
 
 def main(args):
@@ -34,26 +92,42 @@ def main(args):
     parser = argparse.ArgumentParser(description=argparse_desc)
     parser.add_argument('xmlfile', type=str,
                         help='Path to SafeInCloud .xml export file.')
-    parser.add_argument('--skip_samples', type=bool, default=True,
+    parser.add_argument('--showsamples', action='store_true',
                         help='Skip samples')
-    # TODO: include deleted bool
-
+    parser.add_argument('--showtemplates', action='store_true',
+                        help='Skip templates')
+    parser.add_argument('--showdeleted', action='store_true',
+                        help='Show deleted cards')
     args = parser.parse_args()
 
+    # load data
     tree = xml.etree.ElementTree.parse(args.xmlfile)
-    root = tree.getroot()
+    xmlroot = tree.getroot()
 
-    for card in root.iter('card'):
+    all_cards = get_cards(xmlroot)
+
+    print(all_cards)
+
+    return
+
+    for card in xmlroot.iter('card'):
         # get data
         title = card.attrib['title']
 
-        if args.skip_samples and '(Sample)' in title:
+        if not args.showsamples and '(Sample)' in title:
+            continue
+
+        if not args.showtemplates and card.attrib.get('template'):
+            continue
+
+        if not args.showdeleted and card.attrib.get('deleted'):
             continue
 
         # init display table
         table = texttable.Texttable()
         table.set_cols_align(['c', 'c', 'c'])
         table.set_cols_valign(['m', 'm', 'm'])
+        table.set_cols_dtype(['t', 't', 't'])
         table.header(['Name', 'Type', 'Value'])
 
         # add data to table
@@ -62,21 +136,43 @@ def main(args):
                           field.text])
 
         # display
-        print(title)
+        print('\nCard: {}'.format(title))
         print(table.draw() + "\n")
 
         # handle input
         while True:
             choice = input('Choose to: (i)nsert card, (s)kip card or (q)uit: ')
             if choice.lower() not in ('i', 's', 'q'):
-                print("Not an appropriate choice.")
+                print("Not an appropriate choice.\n")
             else:
                 break
 
         # process selection
         if choice.lower() == 'i':
-            # insert
-            print('pass insert ')
+            # construct password store multiline entry
+
+            # SafeInCloud allows multiple password fields
+            password_fields = card.findall('field[@type="password"]')
+
+            # take the first password as the primary
+            entry = '{}\n'.format(password_fields[0].text)
+
+            # add the others below
+            for password in password_fields[1:]:
+                entry += '{}: {}\n'.format(password.attrib['name'], field.text)
+
+            # add all other (non-password) fields
+            non_password_fields = [x for x in card.iter('field')
+                                   if x not in password_fields]
+            for field in non_password_fields:
+                entry += '{}: {}\n'.format(field.attrib['name'], field.text)
+
+            print(entry)
+
+            # path = keyFolder+"/"+keyName+"/"+username
+
+            # pass_import_entry()
+
         elif choice.lower() == 's':
             # skip card
             print('Skipping card...')
