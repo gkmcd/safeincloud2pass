@@ -6,7 +6,6 @@ Usage:
 """
 # IMPORTS
 import argparse
-import texttable
 import subprocess
 import xml.etree.ElementTree
 
@@ -14,19 +13,19 @@ import xml.etree.ElementTree
 class Card(object):
     """Represents a SafeInCloud "card"."""
 
-    def __init__(self, xml_data, fields):
+    def __init__(self, node, fields):
         """."""
-        self.load_from_from_xml(xml_data)
+        self.load_from_xml_node(node)
         self.fields = fields
 
-    def load_from_from_xml(self, xml_data):
+    def load_from_xml_node(self, node):
         """Populate from xml.etree data."""
-        self.title = xml_data.attrib.get('title')
-        self.symbol = xml_data.attrib.get('symbol')
-        self._template = xml_data.attrib.get('template', False)
-        self._deleted = xml_data.attrib.get('deleted', False)
-        self.label = xml_data.attrib.get('label')
-        self.notes = xml_data.attrib.get('notes')
+        self.title = node.attrib.get('title')
+        self.symbol = node.attrib.get('symbol')
+        self._template = node.attrib.get('template', False)
+        self._deleted = node.attrib.get('deleted', False)
+        self.label_id = node.attrib.get('label_id')
+        self.notes = node.attrib.get('notes')
 
     @property
     def template(self):
@@ -52,15 +51,15 @@ class Card(object):
 class Field(object):
     """Fields are the actual data stored in a card."""
 
-    def __init__(self, xml_data):
+    def __init__(self, node):
         """."""
-        self.load_from_xml_data(xml_data)
+        self.load_from_xml_node(node)
 
-    def load_from_xml_data(self, xml_data):
+    def load_from_xml_node(self, node):
         """Populate from xml.etree data."""
-        self.name = xml_data.attrib.get('name')
-        self.type_ = xml_data.attrib.get('type')
-        self.value = xml_data.text
+        self.name = node.attrib.get('name')
+        self.type_ = node.attrib.get('type')
+        self.value = node.text
 
     def output_for_pass():
         """."""
@@ -70,9 +69,14 @@ class Field(object):
 class Label(object):
     """."""
 
-    def __init__():
+    def __init__(self, node):
         """."""
-        pass
+        self.load_from_xml_node(node)
+
+    def load_from_xml_node(self, node):
+        """."""
+        self.name = node.attrib['name']
+        self.id = node.attrib['id']
 
 
 # FUNCTIONS
@@ -95,15 +99,20 @@ def pass_import_entry(path, data):
 
 
 def get_cards(xmlroot):
-    """Return a list of Card objects from card xml elements under xmlroot."""
-    card_tags = [card for card in xmlroot.iter('card')]
+    """Return a list of Card objects from <card> elements under xmlroot."""
+    card_nodes = [card for card in xmlroot.iter('card')]
     all_cards = []
-    for tag in card_tags:
-        fields = [Field(tag) for field in tag.iter('field')]
-        card = Card(tag, fields)
+    for node in card_nodes:
+        fields = [Field(f_node) for f_node in node.iter('field')]
+        card = Card(node, fields)
         all_cards.append(card)
 
     return all_cards
+
+
+def get_labels(xmlroot):
+    """Return a list of Label objects from <label> elements under xmlroot."""
+    return [Label(node) for node in xmlroot.iter('label')]
 
 
 def main(args):
@@ -127,22 +136,22 @@ def main(args):
 
     all_cards = get_cards(xmlroot)
 
+    all_labels = get_labels(xmlroot)
+
     for card in all_cards:
 
         if not args.showsamples and card.sample:
-            print(card.title + ' is a sample')
             continue
 
         if not args.showtemplates and card.template:
-            print(card.title + ' is a template')
             continue
 
         if not args.showdeleted and card.deleted:
-            print(card.title + ' is deleted')
             continue
 
         continue
 
+        """
         # init display table
         table = texttable.Texttable()
         table.set_cols_align(['c', 'c', 'c'])
@@ -199,6 +208,7 @@ def main(args):
             print('\n\n')
         elif choice.lower() == 'q':
             return
+        """
 
 
 if __name__ == '__main__':
