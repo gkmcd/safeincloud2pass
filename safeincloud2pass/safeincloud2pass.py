@@ -10,8 +10,6 @@ import texttable
 import subprocess
 import xml.etree.ElementTree
 
-# namedtuple('Card', '''title fields symbol template deleted sample label notes''') # noqa
-
 
 class Card(object):
     """Represents a SafeInCloud "card"."""
@@ -25,15 +23,26 @@ class Card(object):
         """Populate from xml.etree data."""
         self.title = xml_data.attrib.get('title')
         self.symbol = xml_data.attrib.get('symbol')
-        self.is_template = xml_data.attrib.get('template', False)
-        self.is_deleted = xml_data.attrib.get('deleted', False)
+        self._template = xml_data.attrib.get('template', False)
+        self._deleted = xml_data.attrib.get('deleted', False)
         self.label = xml_data.attrib.get('label')
         self.notes = xml_data.attrib.get('notes')
 
     @property
-    def is_sample(self):
+    def template(self):
+        """."""
+        return str2bool(self._template)
+
+    @property
+    def deleted(self):
+        """."""
+        return str2bool(self._deleted)
+
+    @property
+    def sample(self):
         """SafeInCloud default sample cards have (Sample) in their title."""
-        return self.title.find('(Sample)')
+        if '(Sample)' in self.title:
+            return
 
     def output_for_pass():
         """."""
@@ -41,7 +50,7 @@ class Card(object):
 
 
 class Field(object):
-    """."""
+    """Fields are the actual data stored in a card."""
 
     def __init__(self, xml_data):
         """."""
@@ -67,6 +76,16 @@ class Label(object):
 
 
 # FUNCTIONS
+def str2bool(s):
+    """XML string bools need to be converted to actual bools."""
+    if s is False:
+        return False
+    elif s in ['False', 'false']:
+        return False
+    elif s in ['True', 'true']:
+        return True
+
+
 def pass_import_entry(path, data):
     """Import new password to password-store using pass insert command."""
     proc = subprocess.Popen(['pass', 'insert', '--multiline', path],
@@ -108,22 +127,21 @@ def main(args):
 
     all_cards = get_cards(xmlroot)
 
-    print(all_cards)
+    for card in all_cards:
 
-    return
-
-    for card in xmlroot.iter('card'):
-        # get data
-        title = card.attrib['title']
-
-        if not args.showsamples and '(Sample)' in title:
+        if not args.showsamples and card.sample:
+            print(card.title + ' is a sample')
             continue
 
-        if not args.showtemplates and card.attrib.get('template'):
+        if not args.showtemplates and card.template:
+            print(card.title + ' is a template')
             continue
 
-        if not args.showdeleted and card.attrib.get('deleted'):
+        if not args.showdeleted and card.deleted:
+            print(card.title + ' is deleted')
             continue
+
+        continue
 
         # init display table
         table = texttable.Texttable()
