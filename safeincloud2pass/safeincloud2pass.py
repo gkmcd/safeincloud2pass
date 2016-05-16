@@ -14,12 +14,16 @@ class Card(object):
     """Represents a SafeInCloud "card"."""
 
     def __init__(self, node, fields):
-        """."""
+        """Init card from supplied xml nodes.
+
+        node - <card> tag as xml.etree.ElementTree node
+        fields - list of Field objects from this card's <field> children
+        """
         self.load_from_xml_node(node)
         self.fields = fields
 
     def load_from_xml_node(self, node):
-        """Populate from xml.etree data."""
+        """Populate from xml.etree <card> data."""
         self.title = node.attrib.get('title')
         self.symbol = node.attrib.get('symbol')
         self._template = node.attrib.get('template', False)
@@ -29,22 +33,31 @@ class Card(object):
 
     @property
     def template(self):
-        """."""
+        """Evalute if this card is a template."""
         return str2bool(self._template)
 
     @property
     def deleted(self):
-        """."""
+        """Evalute if this card is a deleted card."""
         return str2bool(self._deleted)
 
     @property
     def sample(self):
-        """SafeInCloud default sample cards have (Sample) in their title."""
+        """Guess if a card is one of the default sample cards.
+
+        There is no attribute to denote a card as a sample, however
+        SafeInCloud default sample cards have (Sample) in their title.
+        """
         if '(Sample)' in self.title:
             return
 
     def __str__(self):
-        """."""
+        """Output suitable for pass insert --multiline.
+
+        SafeInCloud supports multiple passwords per card. We assume that the
+        first password in a card is the primary. Additional passwords are
+        appended below with the other attributes.
+        """
         result = ''
         primary_password = None
         for field in self.fields:
@@ -61,39 +74,47 @@ class Card(object):
 
 
 class Field(object):
-    """Fields are the actual data stored in a card."""
+    """Fields are the actual name-value pairs stored in a card."""
 
     def __init__(self, node):
-        """."""
+        """Init Field from supplied xml node.
+
+        node - <field> tag as xml.etree.ElementTree node
+        """
         self.load_from_xml_node(node)
 
     def load_from_xml_node(self, node):
-        """Populate from xml.etree data."""
+        """Populate from xml.etree <field> data."""
         self.name = node.attrib.get('name')
         self.type_ = node.attrib.get('type')
         self.value = node.text
 
     def __str__(self):
-        """."""
+        """Basic output suitable for use as part of pass insert --multiline."""
         return '{}: {}'.format(self.name, self.value)
 
 
 class Label(object):
-    """."""
+    """Simple holder object for a SafeInCloud label."""
 
     def __init__(self, node):
-        """."""
+        """Populate from xml.etree <label> data."""
         self.load_from_xml_node(node)
 
     def load_from_xml_node(self, node):
-        """."""
+        """Populate from xml.etree <label> data."""
         self.name = node.attrib['name']
         self.id = node.attrib['id']
 
 
 # FUNCTIONS
 def str2bool(s):
-    """XML string bools need to be converted to actual bools."""
+    """Convert string 'true'/'false' bools to actual bools.
+
+    Boolean XML attributes come back as 'true' or 'false' strings. In Python,
+    any non-empty string evaluates to True, so we have to sort these out
+    ourselves.
+    """
     if s is False:
         return False
     elif s in ['False', 'false']:
@@ -111,7 +132,7 @@ def pass_import_entry(path, data):
 
 
 def get_cards(xmlroot):
-    """Return a list of Card objects from <card> elements under xmlroot."""
+    """Return a list of Card objects from all <card> elements under xmlroot."""
     card_nodes = [card for card in xmlroot.iter('card')]
     all_cards = []
     for node in card_nodes:
