@@ -43,9 +43,21 @@ class Card(object):
         if '(Sample)' in self.title:
             return
 
-    def output_for_pass():
+    def __str__(self):
         """."""
-        pass
+        result = ''
+        primary_password = None
+        for field in self.fields:
+            if field.type_ == 'password':
+                result += field.value + '\n'
+                primary_password = field.value
+                break
+        for field in self.fields:
+            if field.type_ == 'password' and field.value == primary_password:
+                continue
+            else:
+                result += str(field) + '\n'
+        return result
 
 
 class Field(object):
@@ -61,9 +73,9 @@ class Field(object):
         self.type_ = node.attrib.get('type')
         self.value = node.text
 
-    def output_for_pass():
+    def __str__(self):
         """."""
-        pass
+        return '{}: {}'.format(self.name, self.value)
 
 
 class Label(object):
@@ -122,6 +134,8 @@ def main(args):
     parser = argparse.ArgumentParser(description=argparse_desc)
     parser.add_argument('xmlfile', type=str,
                         help='Path to SafeInCloud .xml export file.')
+    parser.add_argument('--dryrun', action='store_true',
+                        help='Skip samples')
     parser.add_argument('--showsamples', action='store_true',
                         help='Skip samples')
     parser.add_argument('--showtemplates', action='store_true',
@@ -149,7 +163,7 @@ def main(args):
         if not args.showdeleted and card.deleted:
             continue
 
-        continue
+        print(card)
 
         """
         # init display table
