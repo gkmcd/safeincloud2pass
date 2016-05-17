@@ -161,6 +161,18 @@ def get_labels(xmlroot):
     return [Label(node) for node in xmlroot.iter('label')]
 
 
+def make_path_safe(value):
+    """Make a string safe for (Linux) paths / filenames.
+
+    Very basic function. Removes only '/' and ' '. It's enough for Linux but
+    this will not go well on Windows.
+    Maybe look at slugify()?
+    https://github.com/django/django/blob/master/django/utils/text.py#L417
+    """
+    return value.replace('/', '-').replace(' ', '_')
+
+
+# MAIN
 def main(args):
     """Main function for safeincloud2pass."""
     # arguments
@@ -196,15 +208,15 @@ def main(args):
         if not args.showdeleted and card.deleted:
             continue
 
-        print(card)
-
-        path = card.title
+        path = make_path_safe(card.title)
         for label in all_labels:
             # print(label.id)
             # print(card.label_id)
             if label.id == card.label_id:
-                path = label.name + '/' + path
+                path = make_path_safe(label.name) + '/' + path
+
         print(path)
+        print(card)
 
 
 if __name__ == '__main__':
