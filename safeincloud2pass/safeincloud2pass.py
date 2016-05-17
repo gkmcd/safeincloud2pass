@@ -28,8 +28,12 @@ class Card(object):
         self.symbol = node.attrib.get('symbol')
         self._template = node.attrib.get('template', False)
         self._deleted = node.attrib.get('deleted', False)
-        self.label_id = node.attrib.get('label_id')
         self.notes = node.attrib.get('notes')
+
+        try:
+            self.label_id = node.find('label_id').text
+        except AttributeError:
+            self.label_id = None
 
     @property
     def template(self):
@@ -71,6 +75,15 @@ class Card(object):
             else:
                 result += str(field) + '\n'
         return result
+
+    def make_path(self, labels):
+        """.
+
+        labels - a list of Label objects
+        """
+        for label in labels:
+            if label.id == self.label_id:
+                return label.name + '/' + self.name
 
 
 class Field(object):
@@ -170,7 +183,6 @@ def main(args):
     xmlroot = tree.getroot()
 
     all_cards = get_cards(xmlroot)
-
     all_labels = get_labels(xmlroot)
 
     for card in all_cards:
@@ -186,64 +198,13 @@ def main(args):
 
         print(card)
 
-        """
-        # init display table
-        table = texttable.Texttable()
-        table.set_cols_align(['c', 'c', 'c'])
-        table.set_cols_valign(['m', 'm', 'm'])
-        table.set_cols_dtype(['t', 't', 't'])
-        table.header(['Name', 'Type', 'Value'])
-
-        # add data to table
-        for field in card.iter('field'):
-            table.add_row([field.attrib['name'], field.attrib['type'],
-                          field.text])
-
-        # display
-        print('\nCard: {}'.format(title))
-        print(table.draw() + "\n")
-
-        # handle input
-        while True:
-            choice = input('Choose to: (i)nsert card, (s)kip card or (q)uit: ')
-            if choice.lower() not in ('i', 's', 'q'):
-                print("Not an appropriate choice.\n")
-            else:
-                break
-
-        # process selection
-        if choice.lower() == 'i':
-            # construct password store multiline entry
-
-            # SafeInCloud allows multiple password fields
-            password_fields = card.findall('field[@type="password"]')
-
-            # take the first password as the primary
-            entry = '{}\n'.format(password_fields[0].text)
-
-            # add the others below
-            for password in password_fields[1:]:
-                entry += '{}: {}\n'.format(password.attrib['name'], field.text)
-
-            # add all other (non-password) fields
-            non_password_fields = [x for x in card.iter('field')
-                                   if x not in password_fields]
-            for field in non_password_fields:
-                entry += '{}: {}\n'.format(field.attrib['name'], field.text)
-
-            print(entry)
-
-            # path = keyFolder+"/"+keyName+"/"+username
-
-            # pass_import_entry()
-
-        elif choice.lower() == 's':
-            # skip card
-            print('Skipping card...')
-            print('\n\n')
-        elif choice.lower() == 'q':
-            return
-        """
+        path = card.title
+        for label in all_labels:
+            # print(label.id)
+            # print(card.label_id)
+            if label.id == card.label_id:
+                path = label.name + '/' + path
+        print(path)
 
 
 if __name__ == '__main__':
