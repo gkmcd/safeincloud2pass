@@ -18,6 +18,7 @@ not be imported into pass, unless specifed by the arguments shown below.
 ## Requirements
 Python:     safeincloud2pass should run on any recent version of Python 3. It
 does not require any extra libraries.
+
 Pass:       a setup and working installation of pass
 
 ## Installation:
@@ -29,6 +30,9 @@ safeincloud2pass.py xmlfile [--samples] [--templates] [--deleted]
 
 ## Arguments:
 xmlfile         path to SafeInCloud xml export file (required)
+
 --samples       include sample cards (optional)
+
 --templates     include template cards (optional)
+
 --deleted       include deleted cards (optional)
