@@ -211,9 +211,9 @@ def main(args):
     parser = argparse.ArgumentParser(description=argparse_desc)
     parser.add_argument('xmlfile', type=str,
                         help='Path to SafeInCloud .xml export file.')
-    parser.add_argument('--samples', action='store_true',
+    parser.add_argument('--samples', action='store_true', default=False,
                         help='Include samples')
-    parser.add_argument('--templates', action='store_true',
+    parser.add_argument('--templates', action='store_true', default=False,
                         help='Include templates')
     parser.add_argument('--deleted', action='store_true',
                         help='Include deleted cards')
@@ -228,15 +228,15 @@ def main(args):
 
     for card in all_cards:
 
-        if args.samples and card.sample:
+        if card.sample and not args.samples:
             print('Skipping card (sample): {}'.format(card.title))
             continue
 
-        if args.templates and card.template:
+        if card.template and not args.templates:
             print('Skipping card (template): {}'.format(card.title))
             continue
 
-        if args.deleted and card.deleted:
+        if card.deleted and not args.deleted:
             print('Skipping card (deleted): {}'.format(card.title))
             continue
 
