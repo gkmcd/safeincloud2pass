@@ -1,8 +1,38 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Manage a LMS-style tipping competion on Reddit.com.
+"""Import a SafeInCloud XML export file to pass.
+
+Export your SafeInCloud password database, using the XML option. This must be
+done via the (free) Windows application. Unfortunately, at this point the
+SafeinCloud Android app does not have an export option.
+
+The exported XML data will include any template cards (SafeInCloud refers to
+username/password entries as "cards"), any sample cards, and also any deleted
+cards - apparently when you delete a card in SafeIncloud, it is not actually
+deleted, but just hidden, and these cards turn up in the export data.
+Templates, samples, and deleted cards are filtered out by default, and will
+not be imported into pass, unless specifed by the arguments shown below.
+
+Requirements
+Python:     safeincloud2pass should run on any recent version of Python 3. It
+does not require any extra libraries.
+Pass:       a setup and working installation of pass
+
+Installation:
+
+git clone this repository or just download
+safeincloud2pass/safeincloud2pass.py.
+
 
 Usage:
 
+safeincloud2pass.py xmlfile [--samples] [--templates] [--deleted]
+
+Arguments:
+xmlfile         path to SafeInCloud xml export file (required)
+--samples       include sample cards (optional)
+--templates     include template cards (optional)
+--deleted       include deleted cards (optional)
 """
 # IMPORTS
 import argparse
@@ -139,9 +169,11 @@ def str2bool(s):
 def pass_import_entry(path, data):
     """Import new password to password-store using pass insert command."""
     proc = subprocess.Popen(['pass', 'insert', '--multiline', path],
-                            stdin=PIPE, stdout=PIPE)  # noqa
+                            stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     proc.communicate(data.encode('utf8'))
     proc.wait()
+
+    # subprocess.Popen(cmd, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
 
 
 def get_cards(xmlroot):
@@ -180,43 +212,40 @@ def main(args):
     parser = argparse.ArgumentParser(description=argparse_desc)
     parser.add_argument('xmlfile', type=str,
                         help='Path to SafeInCloud .xml export file.')
-    parser.add_argument('--dryrun', action='store_true',
-                        help='Skip samples')
-    parser.add_argument('--showsamples', action='store_true',
-                        help='Skip samples')
-    parser.add_argument('--showtemplates', action='store_true',
-                        help='Skip templates')
-    parser.add_argument('--showdeleted', action='store_true',
-                        help='Show deleted cards')
+    parser.add_argument('--samples', action='store_true',
+                        help='Include samples')
+    parser.add_argument('--templates', action='store_true',
+                        help='Include templates')
+    parser.add_argument('--deleted', action='store_true',
+                        help='Include deleted cards')
     args = parser.parse_args()
 
     # load data
     tree = xml.etree.ElementTree.parse(args.xmlfile)
     xmlroot = tree.getroot()
-
     all_cards = get_cards(xmlroot)
     all_labels = get_labels(xmlroot)
 
     for card in all_cards:
 
-        if not args.showsamples and card.sample:
+        if args.samples and card.sample:
             continue
 
-        if not args.showtemplates and card.template:
+        if args.templates and card.template:
             continue
 
-        if not args.showdeleted and card.deleted:
+        if args.deleted and card.deleted:
             continue
 
         path = make_path_safe(card.title)
         for label in all_labels:
-            # print(label.id)
-            # print(card.label_id)
             if label.id == card.label_id:
                 path = make_path_safe(label.name) + '/' + path
 
-        print(path)
-        print(card)
+        # print(path)
+        # print(card)
+
+        pass_import_entry(path, str(card))
 
 
 if __name__ == '__main__':
