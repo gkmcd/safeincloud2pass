@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+#
+# Copyright (c) 2015 - the author.
+# All rights reserved.
+#
+# This source code is licensed under the GPL v3 license found in the LICENSE
+# file in the root directory of this source tree.
+#
 """Import a SafeInCloud XML export file to pass.
 
 Export your SafeInCloud password database, using the XML option. This must be
@@ -15,16 +22,14 @@ not be imported into pass, unless specifed by the arguments shown below.
 
 Requirements
 Python:     safeincloud2pass should run on any recent version of Python 3. It
-does not require any extra libraries.
+            does not require any extra libraries.
 Pass:       a setup and working installation of pass
 
 Installation:
-
 git clone this repository or just download
 safeincloud2pass/safeincloud2pass.py.
 
 Usage:
-
 safeincloud2pass.py xmlfile [--samples] [--templates] [--deleted]
 
 Arguments:
@@ -171,8 +176,6 @@ def pass_import_entry(path, data):
                             stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     proc.communicate(data.encode('utf8'))
     proc.wait()
-
-    # subprocess.Popen(cmd, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
 
 
 def get_cards(xmlroot):
