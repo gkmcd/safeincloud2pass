@@ -23,7 +23,6 @@ Installation:
 git clone this repository or just download
 safeincloud2pass/safeincloud2pass.py.
 
-
 Usage:
 
 safeincloud2pass.py xmlfile [--samples] [--templates] [--deleted]
@@ -220,21 +219,25 @@ def main(args):
                         help='Include deleted cards')
     args = parser.parse_args()
 
-    # load data
+    print('Loading XML file...')
     tree = xml.etree.ElementTree.parse(args.xmlfile)
     xmlroot = tree.getroot()
+    print('OK')
     all_cards = get_cards(xmlroot)
     all_labels = get_labels(xmlroot)
 
     for card in all_cards:
 
         if args.samples and card.sample:
+            print('Skipping card (sample): {}'.format(card.title))
             continue
 
         if args.templates and card.template:
+            print('Skipping card (template): {}'.format(card.title))
             continue
 
         if args.deleted and card.deleted:
+            print('Skipping card (deleted): {}'.format(card.title))
             continue
 
         path = make_path_safe(card.title)
@@ -242,10 +245,11 @@ def main(args):
             if label.id == card.label_id:
                 path = make_path_safe(label.name) + '/' + path
 
-        # print(path)
-        # print(card)
+        print('Importing card: {}'.format(path))
 
         pass_import_entry(path, str(card))
+
+        print('OK.')
 
 
 if __name__ == '__main__':
